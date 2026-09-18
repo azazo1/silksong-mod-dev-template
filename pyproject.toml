@@ -1,0 +1,5 @@
+[project]
+name = "silksong-mod-dev-template"
+version = "0.1.0"
+description = "Silksong BepInEx mod template with an isolated game instance"
+requires-python = ">=3.10"

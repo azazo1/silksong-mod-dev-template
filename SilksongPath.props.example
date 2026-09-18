@@ -1,0 +1,7 @@
+<Project>
+  <!-- 复制成 SilksongPath.props 并按需改路径, 该文件不入版本库. -->
+  <!-- 缺省指向仓库内的隔离子实例; 编译/安装会用这里的游戏目录. -->
+  <PropertyGroup>
+    <GameDir>game/Hollow Knight Silksong</GameDir>
+  </PropertyGroup>
+</Project>
