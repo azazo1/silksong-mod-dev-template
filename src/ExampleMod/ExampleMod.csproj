@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$(RepoRoot)Plugin.props" />
+
+  <PropertyGroup>
+    <AssemblyName>ExampleMod</AssemblyName>
+    <RootNamespace>ExampleMod</RootNamespace>
+    <AssemblyTitle>ExampleMod</AssemblyTitle>
+    <Version>0.1.0</Version>
+    <IsPlugin>true</IsPlugin>
+  </PropertyGroup>
+</Project>

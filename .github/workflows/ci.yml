@@ -1,0 +1,49 @@
+# 脚本检查 + 用 Silksong.GameLibs 编译示例插件和 InstanceTools, 不需要本机游戏.
+name: CI
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出
+        uses: actions/checkout@v4
+
+      - name: 安装 uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: 跑脚本检查
+        run: uv run python tools/ci_check.py
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出
+        uses: actions/checkout@v4
+
+      - name: 安装 .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: "10.x"
+
+      - name: 还原
+        run: dotnet restore --locked-mode
+
+      - name: 编译
+        run: dotnet build SilksongMod.sln -c Release --no-restore

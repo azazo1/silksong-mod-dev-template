@@ -2,18 +2,18 @@
 default:
     @just --list
 
-# 编译插件到 bin/
+# 编译示例插件和 InstanceTools
 build:
-    uv run python build.py
+    dotnet build SilksongMod.sln
 
-# 编译并安装到游戏目录 (默认取 SilksongPath.props, 没有则用隔离子实例)
+# 编译. 有 SilksongPath.props 时会复制到 BepInEx/plugins
 install:
-    uv run python build.py --install
+    dotnet build SilksongMod.sln
 
 # 编译并安装到指定游戏目录
 # just install-to '<游戏目录>'
 install-to gamedir:
-    uv run python build.py --install --game-dir '{{gamedir}}'
+    dotnet build SilksongMod.sln -p:SilksongFolder='{{gamedir}}' -p:SilksongPluginsFolder='{{gamedir}}/BepInEx/plugins'
 
 # 创建或补齐隔离子实例
 # just instance '<源安装>'
@@ -32,3 +32,7 @@ launch-wait:
 # just log 80
 log lines='40':
     uv run python tools/tail_log.py {{lines}}
+
+# 跑脚本检查 (GitHub Actions 的 check job)
+check:
+    uv run python tools/ci_check.py

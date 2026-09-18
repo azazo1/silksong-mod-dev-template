@@ -1,0 +1,28 @@
+<Project>
+  <!-- 仓库根. SilksongPath.props 里的相对路径都相对这里解析. -->
+  <PropertyGroup>
+    <RepoRoot>$(MSBuildThisFileDirectory)</RepoRoot>
+  </PropertyGroup>
+
+  <Import Condition="Exists('$(RepoRoot)SilksongPath.props')" Project="$(RepoRoot)SilksongPath.props" />
+
+  <PropertyGroup>
+    <SilksongFolder Condition="'$(SilksongFolder)' != '' and $([System.IO.Path]::IsPathRooted('$(SilksongFolder)')) == false">$([System.IO.Path]::GetFullPath('$(RepoRoot)$(SilksongFolder)'))</SilksongFolder>
+    <SilksongPluginsFolder Condition="'$(SilksongPluginsFolder)' == '' and '$(SilksongFolder)' != ''">$(SilksongFolder)/BepInEx/plugins</SilksongPluginsFolder>
+    <SilksongPluginsFolder Condition="'$(SilksongPluginsFolder)' != '' and $([System.IO.Path]::IsPathRooted('$(SilksongPluginsFolder)')) == false">$([System.IO.Path]::GetFullPath('$(RepoRoot)$(SilksongPluginsFolder)'))</SilksongPluginsFolder>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <EnableNETAnalyzers>True</EnableNETAnalyzers>
+    <AnalysisMode>recommended</AnalysisMode>
+    <NoWarn>$(NoWarn);MSB3270</NoWarn>
+    <RestorePackagesWithLockFile>True</RestorePackagesWithLockFile>
+    <RestoreLockedMode Condition="'$(CI)' == 'true'">True</RestoreLockedMode>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <PathMap Condition="'$(Configuration)' == 'Release'">$(MSBuildProjectDirectory)=/</PathMap>
+  </PropertyGroup>
+</Project>

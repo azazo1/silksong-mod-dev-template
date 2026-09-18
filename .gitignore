@@ -1,6 +1,4 @@
 .tmp
-/bin/
-/obj/
 .vs/
 __pycache__/
 *.py[cod]
@@ -13,6 +11,11 @@ SilksongPath.props
 # 拉起来的隔离子实例, 实例的存档与日志也在这个目录里.
 /game/Hollow Knight Silksong
 
+[Bb]in/
+[Oo]bj/
 *.user
 *.suo
 *.userprefs
+*.rsuser
+artifacts/
+.idea/

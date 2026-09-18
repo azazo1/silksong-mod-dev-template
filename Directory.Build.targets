@@ -1,0 +1,15 @@
+<Project>
+  <!-- 有 SilksongPath.props 且 plugins 目录存在时, 编完复制进游戏. CI 没有这份 props, 只产出 dll. -->
+  <Target
+    Name="CopyPluginToGame"
+    AfterTargets="Build"
+    Condition="'$(IsPlugin)' == 'true' and '$(SilksongPluginsFolder)' != '' and Exists('$(SilksongPluginsFolder)')">
+    <MakeDir Directories="$(SilksongPluginsFolder)/$(AssemblyName)" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(SilksongPluginsFolder)/$(AssemblyName)" />
+    <Copy
+      SourceFiles="$(TargetDir)$(TargetName).pdb"
+      DestinationFolder="$(SilksongPluginsFolder)/$(AssemblyName)"
+      Condition="Exists('$(TargetDir)$(TargetName).pdb')" />
+    <Message Importance="high" Text="已安装插件: $(SilksongPluginsFolder)/$(AssemblyName)" />
+  </Target>
+</Project>
