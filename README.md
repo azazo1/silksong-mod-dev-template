@@ -54,6 +54,8 @@ just log 80
 
 ## 常用命令
 
-见 `justfile`. 没有 `just` 的话, 编译是 `dotnet build SilksongMod.sln`, 实例脚本是 `game/prepare_instance.py`, `game/launch_instance.py`.
+见 `justfile`. 没有 `just` 的话, 编译是 `dotnet build SilksongMod.sln`, 打包是 `uv run python tools/pack_plugin.py --build --git-version`, 实例脚本是 `game/prepare_instance.py`, `game/launch_instance.py`.
+
+`just dist` 生成 `dist/ExampleMod-<version>.zip`, 解压到游戏的 `BepInEx/plugins`.
 
 没有装 `InstanceTools` 时, `just launch` 会拒绝启动, 避免游戏去读写真存档.

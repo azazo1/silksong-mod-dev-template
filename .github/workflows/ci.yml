@@ -1,5 +1,5 @@
-# 普通 CI 与 tag 发布共用: 脚本检查 + GameLibs 编译.
-# 这是 GitHub 模组开发模板, 按库分发做 notes-only Release, 不上传 dll 归档.
+# 普通 CI 与 tag 发布共用: 编译模组, 打成可解压进 BepInEx/plugins 的 zip.
+# InstanceTools 只编不打包. dll 是 AnyCPU, zip 不带平台后缀.
 name: CI
 
 on:
@@ -31,6 +31,7 @@ jobs:
       tag_name: ${{ steps.release_context.outputs.tag_name }}
       source_ref: ${{ steps.release_context.outputs.source_ref }}
       version: ${{ steps.release_version.outputs.version }}
+      build_version: ${{ steps.build_version.outputs.build_version }}
     steps:
       - name: 解析发布上下文
         id: release_context
@@ -77,24 +78,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          package_version="$(python3 - <<'PY'
-          from xml.etree import ElementTree as ET
-
-          root = ET.parse("Directory.Build.props").getroot()
-          version = next(
-              (
-                  node.text.strip()
-                  for group in root.findall("PropertyGroup")
-                  for node in group.findall("Version")
-                  if node.text and node.text.strip()
-              ),
-              "",
-          )
-          if not version:
-              raise SystemExit("Directory.Build.props 缺少 Version")
-          print(version)
-          PY
-          )"
+          package_version="$(python3 tools/project_meta.py)"
           expected_tag="v$package_version"
           if [[ "$TAG_NAME" != "$expected_tag" ]]; then
             echo "tag $TAG_NAME 与 Directory.Build.props Version $package_version 不一致" >&2
@@ -102,25 +86,19 @@ jobs:
           fi
           echo "version=$package_version" >> "$GITHUB_OUTPUT"
 
-  check:
-    needs: version
-    runs-on: ubuntu-latest
-    steps:
-      - name: 检出目标提交
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ needs.version.outputs.source_ref }}
-          fetch-depth: 0
-          fetch-tags: true
-
-      - name: 安装 uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          python-version: "3.12"
-          enable-cache: true
-
-      - name: 跑脚本检查
-        run: uv run python tools/ci_check.py
+      - name: 解析构建版本
+        id: build_version
+        env:
+          IS_RELEASE: ${{ steps.release_context.outputs.is_release }}
+          RELEASE_VERSION: ${{ steps.release_version.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$IS_RELEASE" == "true" ]]; then
+            echo "build_version=$RELEASE_VERSION" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "build_version=$(bash scripts/build-version.sh)" >> "$GITHUB_OUTPUT"
 
   build:
     needs: version
@@ -146,9 +124,22 @@ jobs:
       - name: 编译
         run: dotnet build SilksongMod.sln -c Release --no-restore
 
+      - name: 打包插件
+        env:
+          PROJECT_BUILD_VERSION: ${{ needs.version.outputs.build_version }}
+        run: python3 tools/pack_plugin.py
+
+      - name: 上传插件 zip
+        uses: actions/upload-artifact@v7
+        with:
+          name: ExampleMod-${{ needs.version.outputs.build_version }}
+          path: dist/ExampleMod-${{ needs.version.outputs.build_version }}.zip
+          if-no-files-found: error
+          retention-days: 14
+
   release:
     if: needs.version.outputs.is_release == 'true'
-    needs: [version, check, build]
+    needs: [version, build]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -202,6 +193,33 @@ jobs:
             exit 1
           fi
 
+      - name: 下载构建产物
+        uses: actions/download-artifact@v8
+        with:
+          path: release-artifacts
+          merge-multiple: true
+
+      - name: 校验产物并生成 SHA256SUMS
+        env:
+          BUILD_VERSION: ${{ needs.version.outputs.build_version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          cd release-artifacts
+          archives=(ExampleMod-"$BUILD_VERSION".zip)
+          if [[ ${#archives[@]} -ne 1 || ! -f "${archives[0]}" ]]; then
+            echo "期望 1 个插件 zip, 实际: ${archives[*]:-无}" >&2
+            ls -la >&2
+            exit 1
+          fi
+          sha256sum -- "${archives[@]}" > SHA256SUMS
+          total=("${archives[@]}" SHA256SUMS)
+          if [[ ${#total[@]} -ne 2 ]]; then
+            echo "上传前数量不对: ${total[*]}" >&2
+            exit 1
+          fi
+
       - name: 生成 release notes
         env:
           GH_TOKEN: ${{ github.token }}
@@ -249,16 +267,23 @@ jobs:
             prerelease_args+=(--prerelease)
           fi
 
+          assets=(
+            "release-artifacts/ExampleMod-$VERSION.zip"
+            "release-artifacts/SHA256SUMS"
+          )
+
           if gh release view "$TAG_NAME" >/dev/null 2>&1; then
             gh release edit "$TAG_NAME" \
               --verify-tag \
-              --title "silksong-mod-dev-template v$VERSION" \
+              --title "ExampleMod v$VERSION" \
               --notes-file release-notes.md \
               "${prerelease_args[@]}"
+            gh release upload "$TAG_NAME" --clobber -- "${assets[@]}"
           else
             gh release create "$TAG_NAME" \
               --verify-tag \
-              --title "silksong-mod-dev-template v$VERSION" \
+              --title "ExampleMod v$VERSION" \
               --notes-file release-notes.md \
-              "${prerelease_args[@]}"
+              "${prerelease_args[@]}" \
+              -- "${assets[@]}"
           fi

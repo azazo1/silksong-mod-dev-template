@@ -18,4 +18,5 @@ SilksongPath.props
 *.userprefs
 *.rsuser
 artifacts/
+dist/
 .idea/
