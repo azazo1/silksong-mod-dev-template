@@ -7,6 +7,7 @@
 #   - 隔离存档与日志: 由实例的 InstanceTools 插件在代码层接管, 不需要改游戏文件:
 #       Application.persistentDataPath -> <实例目录>/savedata
 #       PlayerPrefs                     -> <实例目录>/savedata/instance-prefs.txt
+#         (若还没有这份文件, 从 game/instance-prefs.txt 原样复制默认设置)
 #       File.Replace                    -> Copy/Delete/Move 等价实现
 #     Player.log 由启动脚本用引擎自带的 -logFile 指到 <实例目录>/Player.log.
 #   - 隔离 Steam: 默认把实例的 steam_api64.dll 改名为 steam_api64.dll.disabled
@@ -181,6 +182,13 @@ def prepare_instance(
 
     if not has_bepinex(target) or (refresh_binaries and not has_bepinex(source)):
         install_bepinex(target, version=bepinex_version, force=refresh_binaries)
+
+    default_prefs = Path(__file__).resolve().parent / "instance-prefs.txt"
+    instance_prefs = target / "savedata" / "instance-prefs.txt"
+    if copy_file_if_needed(default_prefs, instance_prefs):
+        log.info("写入默认设置: %s", instance_prefs)
+    else:
+        log.info("已有设置文件, 保留: %s", instance_prefs)
 
     exe = target / GAME_EXE_NAME
     if not exe.is_file():

@@ -77,5 +77,5 @@ BepInEx 启动时会报 `Unable to start Unity log writer`, 这时 `Debug.Log` �
 - 断开 Steam 之后, 游戏内的成就, 云存档, 联机相关功能不可用; 想恢复就加 `--keep-steam` 重跑一遍准备脚本.
 - 数据目录是共享的, 只适合读. 如果某个插件会往 `Hollow Knight Silksong_Data` 里写文件, 请用 `--full-copy` 重建.
 - 副本的可执行文件不随 Steam 自动更新, 版本落后时用 `--refresh-binaries` 刷新.
-- PlayerPrefs 落在实例的 `savedata/instance-prefs.txt`, 删掉它就会重新走一次语言选择.
+- PlayerPrefs 落在实例的 `savedata/instance-prefs.txt`. 准备实例时若还没有这份文件, 会从 `game/instance-prefs.txt` 原样复制一份默认设置.
 - `game/instance-tools/` 里的插件是给实例用的, 不属于 mod 本体, 打包发布时不要带上.

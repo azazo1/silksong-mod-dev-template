@@ -29,7 +29,7 @@ just launch
 just log 80
 ```
 
-首次启动会走语言选择. 进到标题界面后, BepInEx 日志里应能看到 `Example Mod` 与 `Instance Tools` 已加载, 以及 `persistentDataPath` 指向实例目录下的 `savedata`.
+准备实例时会把 `game/instance-prefs.txt` 复制进子实例, 跳过语言选择. 进到标题界面后, BepInEx 日志里应能看到 `Example Mod` 与 `Instance Tools` 已加载, 以及 `persistentDataPath` 指向实例目录下的 `savedata`.
 
 路径层级 (源安装 / 实例根目录 / 实例存档目录) 见 [game/README.md](game/README.md).
 
