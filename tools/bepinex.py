@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import urllib.request
 import zipfile
@@ -20,10 +21,91 @@ PACKAGE_API_URL = (
 USER_AGENT = "silksong-mod-dev-template"
 CORE_DLL_RELATIVE = Path("BepInEx") / "core" / "BepInEx.dll"
 DOORSTOP_DLL_NAME = "winhttp.dll"
+CONFIG_RELATIVE = Path("BepInEx") / "config" / "BepInEx.cfg"
+
+_SECTION_RE = re.compile(r"^\[(.+)]\s*$")
+_KEY_RE = re.compile(r"^(\s*)([^=#;]+?)(\s*=\s*)(\S+)(.*)$")
 
 
 def has_bepinex(game_dir: Path) -> bool:
     return (game_dir / CORE_DLL_RELATIVE).is_file() and (game_dir / DOORSTOP_DLL_NAME).is_file()
+
+
+def _set_ini_value(text: str, section: str, key: str, value: str) -> str:
+    newline = "\r\n" if "\r\n" in text else "\n"
+    ended_with_newline = text.endswith("\n")
+    lines = text.splitlines()
+    section_header = f"[{section}]"
+
+    starts: list[int] = []
+    headers: list[str] = []
+    for index, line in enumerate(lines):
+        match = _SECTION_RE.match(line.strip())
+        if match:
+            starts.append(index)
+            headers.append(f"[{match.group(1)}]")
+
+    section_index = next(
+        (index for index, header in enumerate(headers) if header == section_header),
+        None,
+    )
+    if section_index is None:
+        if lines and lines[-1].strip() != "":
+            lines.append("")
+        lines.extend([section_header, f"{key} = {value}"])
+    else:
+        start = starts[section_index]
+        end = starts[section_index + 1] if section_index + 1 < len(starts) else len(lines)
+        key_line: int | None = None
+        for index in range(start + 1, end):
+            stripped = lines[index].strip()
+            if not stripped or stripped.startswith("#") or stripped.startswith(";"):
+                continue
+            match = _KEY_RE.match(lines[index])
+            if match and match.group(2).strip() == key:
+                key_line = index
+                break
+        if key_line is not None:
+            current = _KEY_RE.match(lines[key_line])
+            if current is None:
+                lines[key_line] = f"{key} = {value}"
+            elif current.group(4).lower() == value.lower():
+                return text
+            else:
+                # 只换等号后面的值, 缩进, 空格和行尾注释原样留下.
+                lines[key_line] = (
+                    f"{current.group(1)}{current.group(2)}{current.group(3)}"
+                    f"{value}{current.group(5)}"
+                )
+        else:
+            insert_at = end
+            while insert_at > start + 1 and lines[insert_at - 1].strip() == "":
+                insert_at -= 1
+            lines.insert(insert_at, f"{key} = {value}")
+
+    result = newline.join(lines)
+    if ended_with_newline or not text:
+        result += newline
+    return result
+
+
+def enable_console_logging(game_dir: Path) -> None:
+    # 只改 [Logging.Console] Enabled, 不动其它段.
+    config_path = game_dir / CONFIG_RELATIVE
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    if not config_path.is_file():
+        config_path.write_text("[Logging.Console]\nEnabled = true\n", encoding="utf-8")
+        log.info("已写入 BepInEx 控制台开关: %s", config_path)
+        return
+
+    original = config_path.read_text(encoding="utf-8-sig")
+    updated = _set_ini_value(original, "Logging.Console", "Enabled", "true")
+    if updated == original:
+        log.info("BepInEx 控制台已启用: %s", config_path)
+        return
+
+    config_path.write_text(updated, encoding="utf-8")
+    log.info("已启用 BepInEx 控制台: %s", config_path)
 
 
 def _request(url: str):

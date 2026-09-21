@@ -55,7 +55,7 @@ def launch_instance(target: Path, wait: bool, allow_unisolated: bool, log_tail_l
     unity_log = target / "Player.log"
     log.info("启动: %s", exe)
     popen_kwargs = {
-        "args": [str(exe), "-logFile", str(unity_log)],
+        "args": [str(exe), "-logFile", str(unity_log), "-screen-fullscreen", "0"],
         "cwd": str(target),
         "stdin": subprocess.DEVNULL,
         "stdout": subprocess.DEVNULL,

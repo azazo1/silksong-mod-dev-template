@@ -31,7 +31,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from tools.bepinex import has_bepinex, install_bepinex
+from tools.bepinex import enable_console_logging, has_bepinex, install_bepinex
 from tools.fsutil import (
     copy_directory_contents,
     copy_file_if_needed,
@@ -182,6 +182,8 @@ def prepare_instance(
 
     if not has_bepinex(target) or (refresh_binaries and not has_bepinex(source)):
         install_bepinex(target, version=bepinex_version, force=refresh_binaries)
+
+    enable_console_logging(target)
 
     default_prefs = Path(__file__).resolve().parent / "instance-prefs.txt"
     instance_prefs = target / "savedata" / "instance-prefs.txt"
